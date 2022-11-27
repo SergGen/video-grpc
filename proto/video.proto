@@ -4,7 +4,7 @@ package videoService;
 
 service VideoService {
   rpc callMediaInfo (MediaReq) returns (MediaInfoRes);
-  rpc callVideoChunk (VideoReq) returns (stream MediaRes); // есть предположение, что так как возвращается stream, то в метод передаётся запиханные в один параметр req/res.
+  rpc callVideoChunk (VideoReq) returns (stream MediaRes);
   rpc callMediaSimple (MediaReq) returns (stream MediaRes);
 }
 
