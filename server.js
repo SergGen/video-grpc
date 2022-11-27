@@ -20,15 +20,21 @@ const packageDefinition = protoLoader.loadSync(
         oneofs: true
     });
 
-async function callMediaInfo(payload, res) {
-    try {
+function callMediaInfo(payload, res) {
+    const getData = async () => {
         const resolvedPath = resolve(__dirname, payload.request.pathToMedia);
         const { ext, mime } = await fileTypeFromFile(resolvedPath);
         const { size } = await stat(resolvedPath);
-        res(null, { fileSize: size, ext, mime });
-    } catch (err) {
-        res(err, { fileSize: 0, ext: 'none', mime: 'none' });
+        return { size, ext, mime }
     }
+
+    getData()
+        .then(({ size, ext, mime }) => {
+            res(null, { fileSize: size, ext, mime });
+        })
+        .catch((err) => {
+            res(err, { fileSize: 0, ext: 'none', mime: 'none' });
+        });
 }
 
 function callVideoChunk(call) {
