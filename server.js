@@ -1,9 +1,10 @@
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { dirname, resolve } from "path";
-import {fileURLToPath} from "url";
+import { fileURLToPath } from "url";
 import * as fs from "fs";
-// import { pipeline } from "stream";
+import { stat } from 'node:fs/promises';
+import { fileTypeFromFile } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,25 +20,28 @@ const packageDefinition = protoLoader.loadSync(
         oneofs: true
     });
 
-function callSize(payload, res) {
-    const resolvedPath = resolve(__dirname, payload.request.pathToVideo);
-    fs.stat(resolvedPath, (err, stats) => {
-        res(null, { fileSize: stats.size });
-    });
+async function callMediaInfo(payload, res) {
+    try {
+        const resolvedPath = resolve(__dirname, payload.request.pathToMedia);
+        const { ext, mime } = await fileTypeFromFile(resolvedPath);
+        const { size } = await stat(resolvedPath);
+        res(null, { fileSize: size, ext, mime });
+    } catch (err) {
+        res(err, { fileSize: 0, ext: 'none', mime: 'none' });
+    }
 }
 
-function callVideo(call) {
-    const { pathToVideo, start, end } = call.request;
-    const videoPath = resolve(__dirname, pathToVideo);
-    console.log(videoPath, start, end);
-    const videoDataStream = fs.createReadStream(videoPath, { start, end });
+function callVideoChunk(call) {
+    const { pathToMedia, start, end } = call.request;
+    const resolvedPath = resolve(__dirname, pathToMedia);
+    console.log(resolvedPath, start, end);
+    const videoStream = fs.createReadStream(resolvedPath, { start, end });
 
-    videoDataStream.on('data', (chunk) => {
-        // console.log(chunk);
-        call.write({ videoStream: chunk });
+    videoStream.on('data', (chunk) => {
+        call.write({ mediaStream: chunk });
     });
 
-    videoDataStream.on('end', () => {
+    videoStream.on('end', () => {
         call.end();
     });
 
@@ -49,15 +53,27 @@ function callVideo(call) {
     // });
 }
 
+function callMediaSimple(call) {
+    const { pathToMedia } = call.request;
+    const resolvedPath = resolve(__dirname, pathToMedia);
+    const mediaStream = fs.createReadStream(resolvedPath);
+    mediaStream.on('data', (chunk) => {
+        call.write({ mediaStream: chunk });
+    });
+    mediaStream.on('end', () => {
+        call.end();
+    });
+}
+
+const videoService = grpc.loadPackageDefinition(packageDefinition).videoService;
+
+function getServer() {
+    const server = new grpc.Server();
+    server.addService(videoService.VideoService.service, { callMediaInfo, callVideoChunk, callMediaSimple });
+    return server;
+}
+
 function main() {
-    const videoService = grpc.loadPackageDefinition(packageDefinition).videoService;
-
-    function getServer() {
-        const server = new grpc.Server();
-        server.addService(videoService.VideoService.service, { callVideo, callSize });
-        return server;
-    }
-
     const videoServer = getServer();
     videoServer.bindAsync('0.0.0.0:9090', grpc.ServerCredentials.createInsecure(), () => {
         videoServer.start();

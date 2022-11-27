@@ -3,24 +3,27 @@ syntax = "proto3";
 package videoService;
 
 service VideoService {
-  rpc callSize (VideoSizeReq) returns (VideoSizeRes) {};
-  rpc callVideo (VideoRequest) returns (stream VideoResponse); // есть предположение, что так как возвращается stream, то в метод передаётся запиханные в один параметр req/res.
+  rpc callMediaInfo (MediaReq) returns (MediaInfoRes);
+  rpc callVideoChunk (VideoReq) returns (stream MediaRes); // есть предположение, что так как возвращается stream, то в метод передаётся запиханные в один параметр req/res.
+  rpc callMediaSimple (MediaReq) returns (stream MediaRes);
 }
 
-message VideoSizeReq {
-  string pathToVideo = 1;
+message MediaReq {
+  string pathToMedia = 1;
 }
 
-message VideoSizeRes {
+message MediaInfoRes {
   int32 fileSize = 1;
+  string ext = 2;
+  string mime = 3;
 }
 
-message VideoRequest {
-  string pathToVideo = 1;
+message VideoReq {
+  string pathToMedia = 1;
   int32 start = 2;
   int32 end = 3;
 }
 
-message VideoResponse {
-  bytes videoStream = 1;
+message MediaRes {
+  bytes mediaStream = 1;
 }
