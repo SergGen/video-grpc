@@ -3,7 +3,7 @@ import protoLoader from '@grpc/proto-loader';
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import * as fs from "fs";
-import { stat, appendFile } from 'node:fs/promises';
+import { stat, appendFile, access, constants } from 'node:fs/promises';
 import { fileTypeFromFile } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -92,10 +92,19 @@ function sendMedia (call, res) {
     });
 }
 
+function isFileExist(payload, res) {
+    const resolvedPath = resolve(__dirname, payload.request.fileName);
+    access(resolvedPath, constants.R_OK | constants.W_OK).then(() => {
+        res(null, { fileExist: true });
+    }).catch(() => {
+        res(null, { fileExist: false });
+    });
+}
+
 const videoService = grpc.loadPackageDefinition(packageDefinition).videoService;
 
 function getServer() {
-    const proceduresPack = { callMediaInfo, callVideoChunk, callMediaSimple, sendMedia }
+    const proceduresPack = { callMediaInfo, callVideoChunk, callMediaSimple, sendMedia, isFileExist }
     const server = new grpc.Server();
     server.addService(videoService.VideoService.service, proceduresPack);
     return server;

@@ -7,6 +7,7 @@ service VideoService {
   rpc callVideoChunk (VideoReq) returns (stream MediaRes);
   rpc callMediaSimple (MediaReq) returns (stream MediaRes);
   rpc sendMedia (stream MediaSendReq) returns (Empty);
+  rpc isFileExist (ExistReq) returns (ExistRes);
 }
 
 message MediaReq {
@@ -35,3 +36,11 @@ message MediaSendReq {
 }
 
 message Empty {}
+
+message ExistReq {
+  string fileName = 1;
+}
+
+message ExistRes {
+  bool fileExist = 1;
+}
