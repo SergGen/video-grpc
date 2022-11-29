@@ -6,6 +6,7 @@ service VideoService {
   rpc callMediaInfo (MediaReq) returns (MediaInfoRes);
   rpc callVideoChunk (VideoReq) returns (stream MediaRes);
   rpc callMediaSimple (MediaReq) returns (stream MediaRes);
+  rpc sendMedia (stream MediaSendReq) returns (Empty);
 }
 
 message MediaReq {
@@ -27,3 +28,10 @@ message VideoReq {
 message MediaRes {
   bytes mediaStream = 1;
 }
+
+message MediaSendReq {
+  string fileName = 1;
+  bytes chunk = 2;
+}
+
+message Empty {}

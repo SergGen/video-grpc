@@ -3,7 +3,7 @@ import protoLoader from '@grpc/proto-loader';
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import * as fs from "fs";
-import { stat } from 'node:fs/promises';
+import { stat, appendFile } from 'node:fs/promises';
 import { fileTypeFromFile } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,11 +71,33 @@ function callMediaSimple(call) {
     });
 }
 
+function sendMedia (call, res) {
+    call.on('data', (payload) => {
+        console.log(payload.fileName);
+        const fileName = payload.fileName;
+        const chunk = payload.chunk;
+        const pathToWrite = resolve(__dirname, fileName);
+        console.log(pathToWrite);
+        appendFile(pathToWrite, chunk).then().catch((err) => {res(err, {})});
+    });
+
+    call.on('error', (err) => {
+        console.log(err);
+        res(err, {});
+    });
+
+    call.on('end', () => {
+        console.log('Finished');
+        res(null, {});
+    });
+}
+
 const videoService = grpc.loadPackageDefinition(packageDefinition).videoService;
 
 function getServer() {
+    const proceduresPack = { callMediaInfo, callVideoChunk, callMediaSimple, sendMedia }
     const server = new grpc.Server();
-    server.addService(videoService.VideoService.service, { callMediaInfo, callVideoChunk, callMediaSimple });
+    server.addService(videoService.VideoService.service, proceduresPack);
     return server;
 }
 

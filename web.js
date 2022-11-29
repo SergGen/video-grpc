@@ -2,20 +2,25 @@
 import { sendHomePage } from "./modules/send-home-page.mjs";
 import { sendVideoFile } from "./modules/send-video-file.mjs";
 import http from "http";
-import {createSimpleMediaStream} from "./modules/create-simple-media-stream.mjs";
+
+import { createSimpleMediaStream } from "./modules/create-simple-media-stream.mjs";
+import { sendScript } from "./modules/send-script.mjs";
+import {sendMediaToBack} from "./modules/send-media-to-back.mjs";
 
 const runnersByRouts = {
     '/': sendHomePage,
-    '/video-stream': (req, res) => sendVideoFile(req, res, 'public/video.mp4'),
-    '/img.jpg': (req, res) => createSimpleMediaStream(req, res, 'public/img.jpg'),
+    '/video-stream': (req, res) => { sendVideoFile(req, res, 'public/video.mp4') },
+    '/img.jpg': (req, res) => { createSimpleMediaStream(req, res, 'public/img.jpg') },
+    '/script.js': sendScript,
+    '/load-media': (req, res) => { sendMediaToBack(req, res, 'someFile.mp4'/*, stream*/) }
 };
 
 const router = (req, res) => {
     try {
-        if (req.method !== 'GET') {
-            res.writeHead(405, 'Method Not Allowed');
-            return res.end();
-        }
+        // if (req.method !== 'GET') {
+        //     res.writeHead(405, 'Method Not Allowed');
+        //     return res.end();
+        // }
         const url = req.url;
         const runner = runnersByRouts[url];
         if (!runner) {
