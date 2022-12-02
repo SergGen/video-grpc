@@ -9,6 +9,7 @@ const __dirname = dirname(__filename);
 export const sendMediaToBack = (req, res, fileName) => {
     clientVideo.isFileExist({ fileName }, (err, resGrpc) => {
         if (err) {
+            console.log('Remote err after exist');
             res.writeHead(500, 'Remote Server Error');
             res.end();
             return;
@@ -39,6 +40,7 @@ export const sendMediaToBack = (req, res, fileName) => {
         });
         rdStream.on('error', () => {
             serviceCall.end();
+            console.log('read file Error');
             res.writeHead(500, 'read file Error');
             res.end();
         });

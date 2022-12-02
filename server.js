@@ -3,7 +3,7 @@ import protoLoader from '@grpc/proto-loader';
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import * as fs from "fs";
-import { stat, appendFile, access, constants } from 'node:fs/promises';
+import { stat, appendFile, access, constants, rm } from 'node:fs/promises';
 import { fileTypeFromFile } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +33,7 @@ function callMediaInfo(payload, res) {
             res(null, { fileSize: size, ext, mime });
         })
         .catch((err) => {
+            console.dir(err);
             res(err, { fileSize: 0, ext: 'none', mime: 'none' });
         });
 }
@@ -50,13 +51,6 @@ function callVideoChunk(call) {
     videoStream.on('end', () => {
         call.end();
     });
-
-    // Так не получилось отдать / принять
-    // pipeline(videoDataStream, call, (err) => {
-    //     if (err && !(err.code === 'ERR_STREAM_PREMATURE_CLOSE')) {
-    //         console.log(err);
-    //     }
-    // });
 }
 
 function callMediaSimple(call) {
@@ -92,6 +86,15 @@ function sendMedia (call, res) {
     });
 }
 
+function deleteFile(payload, res) {
+    const resolvedPath = resolve(__dirname, payload.request.fileName);
+    rm(resolvedPath).then(() => {
+        res(null, {});
+    }).catch((err) => {
+        res(err, {});
+    });
+}
+
 function isFileExist(payload, res) {
     const resolvedPath = resolve(__dirname, payload.request.fileName);
     access(resolvedPath, constants.R_OK | constants.W_OK).then(() => {
@@ -104,7 +107,7 @@ function isFileExist(payload, res) {
 const videoService = grpc.loadPackageDefinition(packageDefinition).videoService;
 
 function getServer() {
-    const proceduresPack = { callMediaInfo, callVideoChunk, callMediaSimple, sendMedia, isFileExist }
+    const proceduresPack = { callMediaInfo, callVideoChunk, callMediaSimple, sendMedia, isFileExist, deleteFile };
     const server = new grpc.Server();
     server.addService(videoService.VideoService.service, proceduresPack);
     return server;

@@ -4,6 +4,7 @@ import { clientVideo } from "./grpc-client.mjs";
 export const createVideoStreamByRange = (res, range, pathToMedia) => {
     clientVideo.callMediaInfo({ pathToMedia }, (err, resGrpc) => {
         if (err) {
+            console.log('Remote err after callMediaInfo');
             res.writeHead(500, 'Remote Server Error');
             res.end();
             return;
